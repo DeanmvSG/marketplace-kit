@@ -8,6 +8,10 @@ const program = require('commander'),
   logger = require('./lib/kit').logger,
   version = require('./package.json').version;
 
+const DEBUG = !!process.env.DEBUG;
+
+const debug = msg => (DEBUG ? console.log(`DEBUG :: ${msg}`) : function() {});
+
 const DEFAULT_FILES =
   'js,css,liquid,graphql,yml,html,ttf,otf,woff,woff2,svg,ico,gif,jpg,jpeg,png,webp,webm,mp3,mp4,csv,xls,pdf,doc,docx';
 
@@ -15,10 +19,7 @@ const shouldBeSynced = (path, event) => {
   return !fileRemoved(event) && extensionAllowed(ext(path)) && !isHiddenFile(filename(path));
 };
 
-const isHiddenFile = filename => {
-  return filename.startsWith('.');
-};
-
+const isHiddenFile = filename => filename.startsWith('.');
 const extensionAllowed = ext => program.files.split(',').includes(ext);
 const filename = path => path.split('/').pop();
 const ext = path => path.split('.').pop();
@@ -54,13 +55,16 @@ const pushFile = path => {
       }
     },
     (error, response, body) => {
-      if (error) logger.Error(error);
-      else {
-        if (body != '{}') {
-          notifier.notify({ title: 'MarkeplaceKit Sync Error', message: body });
-          logger.Error(` - ${body}`);
-        } else logger.Success(`[Sync] ${path} - done`);
+      if (error) {
+        return logger.Error(error);
       }
+
+      if (body != '{}') {
+        notifier.notify({ title: 'MarkeplaceKit Sync Error', message: body });
+        return logger.Error(` - ${body}`);
+      }
+
+      logger.Success(`[Sync] ${path} - done`);
     }
   );
 };
@@ -95,7 +99,8 @@ logger.Info(`Sync mode enabled. [${program.url}] \n ---`);
 
 ping(program).then(
   () => {
-    watch('marketplace_builder/', { recursive: true }, (event, file) => {
+    watch('marketplace_builder', { recursive: true }, (event, file) => {
+      debug(`${file}`);
       shouldBeSynced(file, event) && pushFile(file);
     });
   },
