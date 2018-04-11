@@ -2,10 +2,10 @@
 
 const program = require('commander'),
   fs = require('fs'),
-  rl = require('readline'),
   request = require('request'),
   handleResponse = require('./lib/handleResponse'),
   logger = require('./lib/kit').logger,
+  passwordInput = require('./lib/passwordInput'),
   version = require('./package.json').version;
 
 const checkParams = params => {
@@ -25,22 +25,6 @@ const checkParams = params => {
   if (params.url.slice(-1) != '/') {
     params.url = params.url + '/';
   }
-};
-
-// turn to promise
-const getPassword = () => {
-  return new Promise((resolve, reject) => {
-    const reader = rl.createInterface({ input: process.stdin, output: process.stdout });
-    reader.stdoutMuted = true;
-    reader.question('Password: ', password => {
-      reader.close();
-      resolve(password);
-    });
-
-    reader._writeToOutput = stringToWrite => {
-      (reader.stdoutMuted && reader.output.write('*')) || reader.output.write(stringToWrite);
-    };
-  });
 };
 
 const login = (email, password, settings) => {
@@ -97,7 +81,9 @@ program
   .action((environment, params) => {
     process.env.CONFIG_FILE_PATH = params.configFile;
     checkParams(params);
-    getPassword().then(password => {
+
+    logger.Info('Please enter your password:');
+    passwordInput('> ').then(password => {
       const settings = { url: params.url, endpoint: environment, email: params.email };
       login(params.email, password, settings);
     });
