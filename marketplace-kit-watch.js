@@ -42,14 +42,14 @@ const ping = authData => {
   });
 };
 
-const pushFile = filePath => {
+const pushFile = (filePath, authData) => {
   logger.Info(`[Sync] ${filePath}`);
 
   request(
     {
-      uri: program.url + 'api/marketplace_builder/marketplace_releases/sync',
+      uri: authData.url + 'api/marketplace_builder/marketplace_releases/sync',
       method: 'PUT',
-      headers: { UserTemporaryToken: program.token },
+      headers: { UserTemporaryToken: authData.token },
       formData: {
         path: filePathUnixified(filePath), // need path with / separators
         marketplace_builder_file_body: fs.createReadStream(filePath)
@@ -79,6 +79,7 @@ const checkParams = params => {
   if (typeof params.token === 'undefined') {
     errors.push(' no token given! Please add --token token');
   }
+
   if (typeof params.url === 'undefined') {
     errors.push(' no URL given. Please add --url URL');
   }
@@ -98,7 +99,7 @@ logger.Info(`Sync mode enabled. [${program.url}] \n ---`);
 ping(program).then(
   () => {
     watch('marketplace_builder', { recursive: true }, (event, file) => {
-      shouldBeSynced(file, event) && pushFile(file);
+      shouldBeSynced(file, event) && pushFile(file, program);
     });
   },
   error => {
