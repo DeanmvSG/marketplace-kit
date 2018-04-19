@@ -6,17 +6,17 @@ const convertToYAML = (data, output, type) => {
   delete dump.content;
   const metadata = yaml.safeDump(dump);
 
-  if (type == 'yml')
-    value = metadata;
-  else
-    value = `---\n${metadata}---\n${data.body || data.content}`;
+  if (type == 'yml') value = metadata;
+  else value = `---\n${metadata}---\n${data.body || data.content}`;
 
   output.value = value;
   return value;
 };
 
 const createForm = (data, itemType, settings, dom) => {
-  while (dom.firstChild) { dom.removeChild(dom.firstChild); }
+  while (dom.firstChild) {
+    dom.removeChild(dom.firstChild);
+  }
 
   const fields = itemType.fields;
   for (i in fields) {
@@ -30,23 +30,23 @@ const createForm = (data, itemType, settings, dom) => {
       const button = document.createElement('button');
       button.value = source;
       button.appendChild(document.createTextNode('+'));
-      button.onclick = (event) => {
+      button.onclick = event => {
         event.preventDefault();
-        window.dispatchEvent(new CustomEvent('item-type-selected', { detail: source }))
+        window.dispatchEvent(new CustomEvent('item-type-selected', { detail: source }));
       };
       label.appendChild(button);
-    };
+    }
 
     const input = inputFieldFactory.create(key, data[key], settings.find(key));
 
     label.appendChild(input);
-    dom.appendChild(label)
+    dom.appendChild(label);
   }
 };
 
 const inputFieldFactory = {
   create: (key, value, inputType) => {
-    return inputFieldFactory[inputType.type](key, value, inputType)
+    return inputFieldFactory[inputType.type](key, value, inputType);
   },
 
   input: (key, value, inputType) => {
@@ -56,14 +56,13 @@ const inputFieldFactory = {
     input.value = value;
     input.type = 'text';
 
-    if (typeof value === 'undefined')
-      input.value = '';
+    if (typeof value === 'undefined') input.value = '';
 
-    input.onkeyup = (event) => {
+    input.onkeyup = event => {
       const value = event.target.value;
 
       window.dispatchEvent(new CustomEvent('item-data-changed', { detail: { name: event.target.name, value: value } }));
-    }
+    };
 
     return input;
   },
@@ -73,33 +72,31 @@ const inputFieldFactory = {
     input.id = `input-${key}`;
     input.name = key;
 
-    if (typeof value === 'string')
-      input.value = value
-    else if (typeof value === 'undefined')
-      input.value = ''
+    if (typeof value === 'string') input.value = value;
+    else if (typeof value === 'undefined') input.value = '';
     else
-      switch(inputType.format) {
-      case 'json':
-        input.value = JSON.stringify(value, null, 2);
-        break;
-      default:
-        input.value = yaml.safeDump(value);
+      switch (inputType.format) {
+        case 'json':
+          input.value = JSON.stringify(value, null, 2);
+          break;
+        default:
+          input.value = yaml.safeDump(value);
       }
 
-    input.onkeyup = (event) => {
-      switch(inputType.format) {
-      case 'json':
-        value = JSON.parse(input.value);
-        break;
-      case 'yaml':
-        value = yaml.load(input.value);
-        break;
-      default:
-        value = input.value;
+    input.onkeyup = event => {
+      switch (inputType.format) {
+        case 'json':
+          value = JSON.parse(input.value);
+          break;
+        case 'yaml':
+          value = yaml.load(input.value);
+          break;
+        default:
+          value = input.value;
       }
 
       window.dispatchEvent(new CustomEvent('item-data-changed', { detail: { name: event.target.name, value: value } }));
-    }
+    };
 
     return input;
   },
@@ -117,13 +114,13 @@ const inputFieldFactory = {
       option.selected = value && value.indexOf(t) != -1;
 
       option.appendChild(document.createTextNode(t));
-      input.appendChild(option)
+      input.appendChild(option);
     }
 
-    input.onchange = (event) => {
-      const value = [...event.target.options].filter(x => x.selected).map(x => x.value)
+    input.onchange = event => {
+      const value = [...event.target.options].filter(x => x.selected).map(x => x.value);
       window.dispatchEvent(new CustomEvent('item-data-changed', { detail: { name: event.target.name, value: value } }));
-    }
+    };
 
     return input;
   },
@@ -135,25 +132,25 @@ const inputFieldFactory = {
       let div = document.createElement('div');
       let label = document.createElement('label');
       let input = document.createElement('input');
-      input.type = 'checkbox'
+      input.type = 'checkbox';
       input.name = key;
 
       let t = inputType.options[i];
       input.value = t;
       input.checked = value && value.indexOf(t) != -1;
 
-      label.appendChild(input)
+      label.appendChild(input);
       label.appendChild(document.createTextNode(t));
       div.appendChild(label);
       box.appendChild(div);
 
-      input.onchange = (event) => {
-        const value = [...document.getElementsByName(key)].filter(x => x.checked).map(x => x.value)
+      input.onchange = event => {
+        const value = [...document.getElementsByName(key)].filter(x => x.checked).map(x => x.value);
         window.dispatchEvent(new CustomEvent('item-data-changed', { detail: { name: event.target.name, value: value } }));
-      }
+      };
     }
     return box;
   }
-}
+};
 
-module.exports = {convertToYAML, createForm}
+module.exports = { convertToYAML, createForm };

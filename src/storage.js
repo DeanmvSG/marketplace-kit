@@ -1,36 +1,26 @@
 const defaultInput = {
   type: 'input',
   format: 'text'
-}
+};
 
-const getOptions = (name) => storage.items.byType(name).map(x => x.name)
+const getOptions = name => storage.items.byType(name).map(x => x.name);
 
 const storage = {
   session: {
     token: '',
-    endpoint: 'qa3',
-    url: (path) => `/api/${storage.session.endpoint}/${path}`
+    endpoint: 'staging',
+    url: path => `/api/${storage.session.endpoint}/${path}`
   },
   items: {
-    add: (item) => {
-      storage.items.data = [...storage.items.data, item]
-    },
-    load: (items) => {
-      // uniqueness
-      storage.items.data = [...storage.items.data, ...items]
-    },
-    byType: (type) => {
-      return storage.items.data.filter(i => i.type == type)
-    },
-    data: [],
+    add: item => (storage.items.data = [...storage.items.data, item]),
+    load: items => (storage.items.data = [...storage.items.data, ...items]), // uniqueness
+    byType: type => storage.items.data.filter(i => i.type == type),
+    data: []
   },
   itemTypes: [],
   menu: {
     search: {
-      matches: (item) => {
-        return storage.menu.search.itemTypes.has(item.type) &&
-          item.name.match(storage.menu.search.query)
-      },
+      matches: item => storage.menu.search.itemTypes.has(item.type) && item.name.match(storage.menu.search.query),
       itemTypes: new Set(),
       query: ''
     }
@@ -38,18 +28,17 @@ const storage = {
   editor: {
     item: {},
     settings: {
-      find: (fieldName) => {
+      find: fieldName => {
         const field = storage.editor.settings.fields[fieldName] || defaultInput;
 
-        if (!field.source)
-          return field;
+        if (!field.source) return field;
 
         return {
           type: field.type,
           options: getOptions(field.source),
           format: field.format,
           source: field.source
-        }
+        };
       },
       fields: {
         content: { type: 'textarea', format: 'liquid' },
@@ -84,6 +73,6 @@ const storage = {
       }
     }
   }
-}
+};
 
 module.exports = storage;
