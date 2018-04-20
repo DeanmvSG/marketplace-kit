@@ -1,97 +1,38 @@
 #!/usr/bin/env node
 
-const fetchAuthData = require('./lib/settings').fetchSettings;
-const port = 3333;
-const agent = require('request');
-const fs = require('fs');
-const path = require('path');
+const program = require('commander'),
+  fetchAuthData = require('./lib/settings').fetchSettings,
+  spawn = require('child_process').spawn,
+  command = require('./lib/command'),
+  logger = require('./lib/kit').logger,
+  version = require('./package.json').version;
 
-const express = require('express');
-const multer = require('multer');
-const upload = multer();
+program
+  .version(version)
+  .arguments('<environment>', 'name of environment. Example: staging')
+  .option('-c --config-file <config-file>', 'config file path', '.marketplace-kit')
+  .option('-p --port <port>', 'use PORT', '3333')
+  .action((environment, params) => {
+    process.env.CONFIG_FILE_PATH = params.configFile;
+    const authData = fetchAuthData(environment);
+    const env = Object.assign(process.env, {
+      MARKETPLACE_TOKEN: authData.token,
+      MARKETPLACE_URL: authData.url,
+      PORT: params.port
+    });
 
-const app = express();
+    const server = spawn(command('marketplace-kit-server'), [], { stdio: 'inherit' });
 
-const settings = (configFilePath = '.marketplace-kit') => {
-  const config = path.resolve(process.cwd(), configFilePath);
-  if (fs.existsSync(config)) {
-    return JSON.parse(fs.readFileSync(config));
-  } else {
-    return {};
-  }
-};
-
-const findGraphQLQuery = ({ name }, { type }) => {
-  switch (name) {
-    case 'items':
-      return `{ items: cms_items(type: ${type}) { results { type name: resource_name data }}}`;
-    case 'discovery':
-      return '{ itemTypes: cms_discovery { results { name  path  fields  }}}';
-    default:
-      return '';
-  }
-};
-
-app.use('/gui', express.static(__dirname + '/gui/public'));
-
-app.get('/api/:environment/:name.json', (request, response) => {
-  const authData = settings()[request.params.environment];
-
-  load(authData, request.params, request.query).then(
-    body => response.send(body),
-    error => response.status(401).send(error.statusText)
-  );
-});
-
-const load = (authData, params, query) => {
-  return new Promise((resolve, reject) => {
-    agent(
-      {
-        uri: `${authData.url}/api/graph`,
-        method: 'POST',
-        headers: { Authorization: `Token ${authData.token}` },
-        json: { query: findGraphQLQuery(params, query) }
-      },
-      (error, resp, body) => {
-        if (body.data) resolve(body.data);
-        else {
-          reject(body);
-        }
+    server.on('close', code => {
+      if (code === 1) {
+        logger.Error('✖ failed.');
+        process.exit(1);
       }
-    );
+    });
   });
-};
 
-app.put(
-  '/api/:environment/sync',
-  upload.fields([{ name: 'path' }, { name: 'marketplace_builder_file_body' }]),
-  (request, response) => {
-    const authData = settings()[request.params.environment];
-
-    const form = {
-      path: request.body.path,
-      marketplace_builder_file_body: request.files.marketplace_builder_file_body[0].buffer
-    };
-
-    agent(
-      {
-        uri: `${authData.url}api/marketplace_builder/marketplace_releases/sync`,
-        method: 'PUT',
-        headers: {
-          Authorization: `Token ${authData.token}`,
-          'User-Agent': 'marketplace-kit/2.0.1'
-        },
-        formData: form
-      },
-      (error, resp, body) => response.send(body)
-    );
-  }
-);
-
-app.listen(port, err => {
-  if (err) {
-    return console.log('something wrong happened', err);
-  }
-
-  console.log(`server is listening on ${port}`);
-});
+program.parse(process.argv);
+if (!program.args.length) {
+  program.help();
+  process.exit(1);
+}

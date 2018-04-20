@@ -56,6 +56,8 @@ const reloadItemTypesData = () => {
       storage.itemTypes = [];
       storage.itemTypes = [...response.data.itemTypes.results]
         .filter(t => t.name != 'Asset')
+        .filter(t => t.name != 'ActivityStreamsHandler')
+        .filter(t => t.name != 'ActivityStreamsGroupingHandler')
         .filter(t => t.name != 'Translation');
 
       window.dispatchEvent(new Event('item-types-loaded'));

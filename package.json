@@ -1,6 +1,6 @@
 {
   "name": "@platform-os/marketplace-kit",
-  "version": "1.3.3",
+  "version": "2.0.2",
   "description": "Make changes in your marketplace on Platform OS",
   "scripts": {
     "build-gui": "webpack-cli --mode production gui/src --output gui/public/app.js"
@@ -19,6 +19,7 @@
     "marketplace-kit-env-add": "./marketplace-kit-env-add.js",
     "marketplace-kit-init": "./marketplace-kit-init.js",
     "marketplace-kit-gui": "./marketplace-kit-gui.js",
+    "marketplace-kit-server": "./marketplace-kit-server.js",
     "marketplace-kit-deploy": "./marketplace-kit-deploy.js",
     "marketplace-kit-push": "./marketplace-kit-push.js",
     "marketplace-kit-archive": "./marketplace-kit-archive.js",

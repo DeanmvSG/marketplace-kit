@@ -8,8 +8,7 @@ const getOptions = name => storage.items.byType(name).map(x => x.name);
 const storage = {
   session: {
     token: '',
-    endpoint: 'qa1',
-    url: path => `/api/${storage.session.endpoint}/${path}`
+    url: path => `/api/${path}`
   },
   items: {
     add: item => (storage.items.data = [...storage.items.data, item]),
