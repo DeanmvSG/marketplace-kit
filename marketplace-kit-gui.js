@@ -4,6 +4,7 @@ const fetchAuthData = require('./lib/settings').fetchSettings;
 const port = 3333;
 const agent = require('request');
 const fs = require('fs');
+const path = require('path');
 
 const express = require('express');
 const multer = require('multer');
@@ -11,9 +12,10 @@ const upload = multer();
 
 const app = express();
 
-const settings = () => {
-  if (fs.existsSync(process.env.CONFIG_FILE_PATH)) {
-    return JSON.parse(fs.readFileSync(process.env.CONFIG_FILE_PATH));
+const settings = (configFilePath = '.marketplace-kit') => {
+  const config = path.resolve(process.cwd(), configFilePath);
+  if (fs.existsSync(config)) {
+    return JSON.parse(fs.readFileSync(config));
   } else {
     return {};
   }
@@ -35,11 +37,10 @@ app.use('/gui', express.static(__dirname + '/gui/public'));
 app.get('/api/:environment/:name.json', (request, response) => {
   const authData = settings()[request.params.environment];
 
-  load(authData, request.params, request.query)
-    .then(
-      body => response.send(body),
-      error => response.status(401).send(error.statusText)
-    );
+  load(authData, request.params, request.query).then(
+    body => response.send(body),
+    error => response.status(401).send(error.statusText)
+  );
 });
 
 const load = (authData, params, query) => {
@@ -52,8 +53,7 @@ const load = (authData, params, query) => {
         json: { query: findGraphQLQuery(params, query) }
       },
       (error, resp, body) => {
-        if (body.data)
-          resolve(body.data);
+        if (body.data) resolve(body.data);
         else {
           reject(body);
         }
