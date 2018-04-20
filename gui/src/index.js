@@ -51,12 +51,17 @@ saveButton.onclick = event => {
 };
 
 const reloadItemTypesData = () => {
-  request.get(storage.session.url('discovery.json')).then(response => {
-    storage.itemTypes = [];
-    storage.itemTypes = response.data.itemTypes.results;
+  return new Promise((resolve, reject) => {
+    request.get(storage.session.url('discovery.json')).then(response => {
+      storage.itemTypes = [];
+      storage.itemTypes = [...response.data.itemTypes.results]
+        .filter(t => t.name != 'Asset')
+        .filter(t => t.name != 'Translation');
 
-    window.dispatchEvent(new Event('item-types-loaded'));
-  }, flash);
+      window.dispatchEvent(new Event('item-types-loaded'));
+      resolve('OK');
+    }, flash);
+  });
 };
 
 const loadItemsData = e => {
@@ -211,14 +216,14 @@ const renderEditor = () => {
 };
 
 const render = () => {
-  reloadItemTypesData();
-
-  loadItemsData({ detail: 'EmailNotification' });
-  loadItemsData({ detail: 'SmsNotification' });
-  loadItemsData({ detail: 'ApiCallNotification' });
-  loadItemsData({ detail: 'AuthorizationPolicy' });
-  loadItemsData({ detail: 'FormConfiguration' });
-  loadItemsData({ detail: 'TransactableType' });
+  reloadItemTypesData().then( ()=>{
+    loadItemsData({ detail: 'EmailNotification' });
+    loadItemsData({ detail: 'SmsNotification' });
+    loadItemsData({ detail: 'ApiCallNotification' });
+    loadItemsData({ detail: 'AuthorizationPolicy' });
+    loadItemsData({ detail: 'FormConfiguration' });
+    loadItemsData({ detail: 'TransactableType' });
+  } )
 };
 
 render();

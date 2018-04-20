@@ -8,7 +8,7 @@ const getOptions = name => storage.items.byType(name).map(x => x.name);
 const storage = {
   session: {
     token: '',
-    endpoint: 'staging',
+    endpoint: 'qa1',
     url: path => `/api/${storage.session.endpoint}/${path}`
   },
   items: {
@@ -20,7 +20,7 @@ const storage = {
   itemTypes: [],
   menu: {
     search: {
-      matches: item => storage.menu.search.itemTypes.has(item.type) && item.name.match(storage.menu.search.query),
+      matches: item => storage.menu.search.itemTypes.has(item.type) && (item.name || '').match(storage.menu.search.query),
       itemTypes: new Set(),
       query: ''
     }

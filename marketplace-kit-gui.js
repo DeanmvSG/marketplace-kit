@@ -30,31 +30,37 @@ const findGraphQLQuery = ({ name }, { type }) => {
   }
 };
 
-app.use('/gui', express.static(__dirname + '/gui'));
+app.use('/gui', express.static(__dirname + '/gui/public'));
 
 app.get('/api/:environment/:name.json', (request, response) => {
   const authData = settings()[request.params.environment];
 
-  agent(
-    {
-      uri: `${authData.url}/api/graph`,
-      method: 'POST',
-      headers: { Authorization: `Token ${authData.token}` },
-      json: { query: findGraphQLQuery(request.params, request.query) }
-    },
-    (error, resp, body) => {
-      response.send(body.data);
-    }
-  );
+  load(authData, request.params, request.query)
+    .then(
+      body => response.send(body),
+      error => response.status(401).send(error.statusText)
+    );
 });
 
-app.listen(port, err => {
-  if (err) {
-    return console.log('something wrong happened', err);
-  }
-
-  console.log(`server is listening on ${port}`);
-});
+const load = (authData, params, query) => {
+  return new Promise((resolve, reject) => {
+    agent(
+      {
+        uri: `${authData.url}/api/graph`,
+        method: 'POST',
+        headers: { Authorization: `Token ${authData.token}` },
+        json: { query: findGraphQLQuery(params, query) }
+      },
+      (error, resp, body) => {
+        if (body.data)
+          resolve(body.data);
+        else {
+          reject(body);
+        }
+      }
+    );
+  });
+};
 
 app.put(
   '/api/:environment/sync',
@@ -72,7 +78,8 @@ app.put(
         uri: `${authData.url}api/marketplace_builder/marketplace_releases/sync`,
         method: 'PUT',
         headers: {
-          UserTemporaryToken: proces.env.USER_TEMPORARY_TOKEN
+          Authorization: `Token ${authData.token}`,
+          'User-Agent': 'marketplace-kit/2.0.1'
         },
         formData: form
       },
@@ -80,3 +87,11 @@ app.put(
     );
   }
 );
+
+app.listen(port, err => {
+  if (err) {
+    return console.log('something wrong happened', err);
+  }
+
+  console.log(`server is listening on ${port}`);
+});
