@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const program = require('commander'),
-  request = require('request'),
+  Proxy = require('./lib/proxy').Proxy,
   fs = require('fs'),
   path = require('path'),
   watch = require('node-watch'),
@@ -21,48 +21,21 @@ const filename = filePath => filePath.split(path.sep).pop();
 const fileUpdated = event => event === 'update';
 const filePathUnixified = filePath => filePath.replace(/\\/g, '/').replace('marketplace_builder/', '');
 
-const ping = authData => {
-  return new Promise((resolve, reject) => {
-    request(
-      {
-        uri: authData.url + 'api/marketplace_builder/logs',
-        method: 'GET',
-        headers: { UserTemporaryToken: authData.token }
-      },
-      (error, response, body) => {
-        if (error) reject({ status: error });
-        else if (response.statusCode != 200)
-          reject({
-            status: response.statusCode,
-            message: response.statusMessage
-          });
-        else resolve('OK');
-      }
-    );
-  });
-};
-
 const pushFile = (filePath, authData) => {
   logger.Info(`[Sync] ${filePath}`);
 
-  request(
-    {
-      uri: authData.url + 'api/marketplace_builder/marketplace_releases/sync',
-      method: 'PUT',
-      headers: { UserTemporaryToken: authData.token },
-      formData: {
-        path: filePathUnixified(filePath), // need path with / separators
-        marketplace_builder_file_body: fs.createReadStream(filePath)
-      }
+  const formData = {
+    path: filePathUnixified(filePath), // need path with / separators
+    marketplace_builder_file_body: fs.createReadStream(filePath)
+  }
+
+  proxy.sync(formData).then(
+    body => {
+      logger.Success(`[Sync] ${filePath} - done`);
     },
-    (error, response, body) => {
-      if (error) logger.Error(error);
-      else {
-        if (body != '{}') {
-          notifier.notify({ title: 'MarkeplaceKit Sync Error', message: body });
-          logger.Error(` - ${body}`);
-        } else logger.Success(`[Sync] ${filePath} - done`);
-      }
+    error => {
+      notifier.notify({ title: 'MarkeplaceKit Sync Error', message: error });
+      logger.Error(` - ${error}`);
     }
   );
 };
@@ -96,7 +69,9 @@ checkParams(program);
 
 logger.Info(`Sync mode enabled. [${program.url}] \n ---`);
 
-ping(program).then(
+const proxy = new Proxy(program.url, program.token);
+
+proxy.ping().then(
   () => {
     watch('marketplace_builder', { recursive: true }, (event, file) => {
       shouldBeSynced(file, event) && pushFile(file, program);

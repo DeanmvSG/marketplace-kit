@@ -6,7 +6,7 @@ const fs = require('fs');
 const express = require('express');
 const multer = require('multer');
 const upload = multer();
-const Proxy = require('./gui/src/proxy').Proxy
+const Proxy = require('./lib/proxy').Proxy
 
 const app = express();
 
@@ -33,8 +33,9 @@ app.put(
       marketplace_builder_file_body: request.files.marketplace_builder_file_body[0].buffer
     };
 
-    proxy.push(form).then(
-      body => response.send(body)
+    proxy.sync(form).then(
+      body => response.send(body),
+      error => response.send(error)
     );
   }
 );

@@ -29,12 +29,13 @@ const createForm = (data, itemType, settings, dom) => {
     if (source) {
       const button = document.createElement('button');
       button.value = source;
-      button.appendChild(document.createTextNode('+'));
+      button.appendChild(document.createTextNode('>>'));
       button.onclick = event => {
         event.preventDefault();
         window.dispatchEvent(new CustomEvent('item-type-selected', { detail: source }));
       };
-      label.appendChild(button);
+      // hide for now
+      // label.appendChild(button);
     }
 
     const input = inputFieldFactory.create(key, data[key], settings.find(key));
@@ -72,16 +73,20 @@ const inputFieldFactory = {
     input.id = `input-${key}`;
     input.name = key;
 
-    if (typeof value === 'string') input.value = value;
-    else if (typeof value === 'undefined') input.value = '';
-    else
-      switch (inputType.format) {
-        case 'json':
-          input.value = JSON.stringify(value, null, 2);
-          break;
-        default:
-          input.value = yaml.safeDump(value);
-      }
+    switch (inputType.format) {
+      case 'liquid':
+        input.value = value || '';
+        break;
+      case 'json':
+        input.value = JSON.stringify(value, null, 2);
+        break;
+      case 'yaml':
+      case 'yml':
+        input.value = yaml.safeDump(value || []);
+        break;
+      default:
+        input.value = value || '';
+    }
 
     input.onkeyup = event => {
       switch (inputType.format) {

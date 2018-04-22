@@ -3,33 +3,15 @@
 const program = require('commander'),
   EventEmitter = require('events'),
   fetchAuthData = require('./lib/settings').fetchSettings,
-  request = require('request'),
   notifier = require('node-notifier'),
   logger = require('./lib/kit').logger,
-  fs = require('fs');
-
-const fetchLogs = authData => {
-  return new Promise((resolve, reject) => {
-    request(
-      {
-        uri: authData.url + 'api/marketplace_builder/logs',
-        qs: { last_id: storage.lastId },
-        method: 'GET',
-        headers: { UserTemporaryToken: authData.token }
-      },
-      (error, response, body) => {
-        if (error) reject({ status: error });
-        else if (response.statusCode != 200) reject({ status: response.statusCode, message: response.statusMessage });
-        else resolve(JSON.parse(body));
-      }
-    );
-  });
-};
+  Proxy = require('./lib/proxy').Proxy;
 
 class LogStream extends EventEmitter {
   constructor(authData) {
     super();
     this.authData = authData;
+    this.proxy = new Proxy(authData.url, authData.token);
   }
 
   start() {
@@ -39,7 +21,7 @@ class LogStream extends EventEmitter {
   }
 
   fetchData() {
-    fetchLogs(this.authData).then(
+    this.proxy.logs({lastId: storage.lastId}).then(
       ({ logs }) => {
         for (let k in logs) {
           let row = logs[k];

@@ -10,13 +10,19 @@ const program = require('commander'),
 program
   .version(version)
   .arguments('<environment>', 'name of environment. Example: staging')
-  .option('-f --force', 'force update. Removes files that are not present in deployed release')
+  .option('-f --force', 'force update. Removes instance-admin lock')
   .option('-c --config-file <config-file>', 'config file path', '.marketplace-kit')
   .action((environment, params) => {
     process.env.CONFIG_FILE_PATH = params.configFile;
-    process.env.FORCE = params.force;
     const authData = fetchAuthData(environment);
-    const env = Object.assign(process.env, { MARKETPLACE_TOKEN: authData.token, MARKETPLACE_URL: authData.url });
+
+    const env = Object.assign(process.env, {
+      MARKETPLACE_TOKEN: authData.token,
+      MARKETPLACE_URL: authData.url
+    });
+
+    if (params.force)
+      env.FORCE = true;
 
     // make an archive
     const archive = spawn(command('marketplace-kit-archive'), [], { stdio: 'inherit' });
