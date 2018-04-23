@@ -17,7 +17,7 @@ app.use('/gui', express.static(__dirname + '/gui/public'));
 // /api/items
 // /api/itemTypes
 app.get('/api/:name.json', (request, response) => {
-  proxy.load(request.params, request.query)
+  proxy.load(request.params.name, {type: request.query.type})
     .then(
       body => response.send(body),
       error => response.status(401).send(error.statusText)

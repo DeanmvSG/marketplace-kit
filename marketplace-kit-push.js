@@ -20,7 +20,7 @@ const getDeploymentStatus = (id) => {
           else
             resolve(response);
         },
-        error => reject(error);
+        error => reject(error)
       );
     })();
   });
