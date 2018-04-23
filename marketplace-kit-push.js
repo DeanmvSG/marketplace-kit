@@ -3,7 +3,6 @@
 const program = require('commander'),
       Proxy = require('./lib/proxy').Proxy,
       fs = require('fs'),
-      handleResponse = require('./lib/handleResponse'),
       logger = require('./lib/kit').logger,
       version = require('./package.json').version;
 

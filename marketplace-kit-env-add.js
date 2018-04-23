@@ -4,7 +4,7 @@ const program = require('commander'),
   fs = require('fs'),
   rl = require('readline'),
   request = require('request'),
-  handleResponse = require('./lib/handleResponse'),
+  Proxy = require('./lib/proxy').Proxy,
   logger = require('./lib/kit').logger,
   version = require('./package.json').version;
 
@@ -43,26 +43,6 @@ const getPassword = () => {
   });
 };
 
-const login = (email, password, settings) => {
-  request(
-    {
-      uri: settings.url + 'api/marketplace_builder/sessions',
-      method: 'POST',
-      json: { email, password }
-    },
-    function(error, response, body) {
-      handleResponse(error, response, body, body => {
-        if (body.token) {
-          storeEnvironment(Object.assign(settings, { token: body.token }));
-        } else {
-          logger.Error('Error: response from server invalid, token is missing');
-          process.exit(1);
-        }
-      });
-    }
-  );
-};
-
 const storeEnvironment = settings => {
   const environmentSettings = {
     [settings.endpoint]: {
@@ -75,7 +55,7 @@ const storeEnvironment = settings => {
 };
 
 const saveFile = settings => {
-  fs.writeFileSync(process.env.CONFIG_FILE_PATH, JSON.stringify(settings), err => {
+  fs.writeFileSync(process.env.CONFIG_FILE_PATH, JSON.stringify(settings, null, 2), err => {
     if (err) throw err;
   });
 };
@@ -97,9 +77,23 @@ program
   .action((environment, params) => {
     process.env.CONFIG_FILE_PATH = params.configFile;
     checkParams(params);
+    const proxy = new Proxy(params.url);
     getPassword().then(password => {
-      const settings = { url: params.url, endpoint: environment, email: params.email };
-      login(params.email, password, settings);
+      proxy.login(params.email, password).then(
+        body => {
+          if (body.token) {
+            const settings = { url: params.url, endpoint: environment, email: params.email };
+            storeEnvironment(Object.assign(settings, { token: body.token }));
+          } else {
+            logger.Error('Error: response from server invalid, token is missing');
+            process.exit(1);
+          }
+        }, error => {
+          logger.Print('\n');
+          logger.Error(error);
+          process.exit(1);
+        }
+      );
     });
   });
 
